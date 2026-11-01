@@ -12,6 +12,17 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from .config import EMBEDDING_MODEL, MIN_MESSAGE_LENGTH, NUM_TOPICS, OUTPUT_DIR
 
 
+def _sanitize_csv_formula(value):
+    """Prevent spreadsheet applications from interpreting text as formulas."""
+    formula_prefixes = ("=", "+", "-", "@")
+    if isinstance(value, str) and (
+        value.startswith(("\t", "\r", "\n"))
+        or value.lstrip().startswith(formula_prefixes)
+    ):
+        return f"'{value}"
+    return value
+
+
 def analyze_chat_topics(
     csv_path: Path,
     num_topics: int = NUM_TOPICS,
@@ -137,7 +148,9 @@ def main() -> int:
     if not df_result.empty:
         OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
         output_csv = OUTPUT_DIR / "categorized_topics.csv"
-        df_result.to_csv(output_csv, index=False, encoding="utf-8")
+        df_result.map(_sanitize_csv_formula).to_csv(
+            output_csv, index=False, encoding="utf-8"
+        )
         print(f"\nSuccess! Categorized chat rows saved to '{output_csv}'")
 
     return 0
