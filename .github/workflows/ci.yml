@@ -15,8 +15,8 @@ jobs:
         with:
           fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
       # This step should build, test and generate coverage reports
-      - name: Install mise
-        uses: jdx/mise-action@v5
+      - name: mise action
+        uses: jdx/mise-action@8008c3f4db491fde6fd6d72dc97fbdb752dac949 # v5.2.5
 
       - name: Install dependencies
         run: mise run bootstrap
