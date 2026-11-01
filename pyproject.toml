@@ -41,6 +41,9 @@ addopts = "-v --cov=src/beeper_chat_organizer --cov-report=html --cov-report=ter
 source = ["src/beeper_chat_organizer"]
 omit = ["**/tests/**"]
 
+[tool.coverage.report]
+fail_under = 80
+
 [tool.uv]
 package = true
 

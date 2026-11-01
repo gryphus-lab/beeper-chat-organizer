@@ -67,6 +67,14 @@ class TestCleanMessage:
         msg = "{broken json"
         assert _clean_message(msg) == msg
 
+    def test_non_string_json_body_does_not_raise(self):
+        assert _clean_message('{"body": 42}') == "42"
+        assert _clean_message('{"body": null}') == "None"
+
+    def test_deeply_nested_json_does_not_raise(self):
+        msg = '{"body":' + "[" * 1100 + "0" + "]" * 1100 + "}"
+        assert _clean_message(msg) == msg
+
 
 class TestParseMessages:
     """Test full message parsing pipeline."""

@@ -10,17 +10,11 @@ from sklearn.cluster import KMeans
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 from .config import EMBEDDING_MODEL, MIN_MESSAGE_LENGTH, NUM_TOPICS, OUTPUT_DIR
-
-
-def _sanitize_csv_formula(value):
-    """Prevent spreadsheet applications from interpreting text as formulas."""
-    formula_prefixes = ("=", "+", "-", "@")
-    if isinstance(value, str) and (
-        value.startswith(("\t", "\r", "\n"))
-        or value.lstrip().startswith(formula_prefixes)
-    ):
-        return f"'{value}"
-    return value
+from .utils.output import (
+    ensure_private_output_dir,
+    sanitize_terminal_text,
+    write_private_csv,
+)
 
 
 def analyze_chat_topics(
@@ -98,13 +92,14 @@ def _print_topic_report(df: pd.DataFrame, num_topics: int):
             keywords = "N/A"
 
         print(f"### TOPIC #{topic_num} ({len(topic_messages)} messages)")
-        print(f"**Core Keywords:** {keywords}")
+        print(f"**Core Keywords:** {sanitize_terminal_text(keywords)}")
         print("**Sample Conversations:**")
 
         samples = topic_messages.sample(
             min(3, len(topic_messages)), random_state=42
         ).tolist()
         for sample in samples:
+            sample = sanitize_terminal_text(sample)
             display = f'"{sample[:120]}..."' if len(sample) > 120 else f'"{sample}"'
             print(f" - {display}")
         print("-" * 50)
@@ -146,11 +141,9 @@ def main() -> int:
     )
 
     if not df_result.empty:
-        OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-        output_csv = OUTPUT_DIR / "categorized_topics.csv"
-        df_result.map(_sanitize_csv_formula).to_csv(
-            output_csv, index=False, encoding="utf-8"
-        )
+        output_dir = ensure_private_output_dir(OUTPUT_DIR)
+        output_csv = output_dir / "categorized_topics.csv"
+        write_private_csv(df_result, output_csv)
         print(f"\nSuccess! Categorized chat rows saved to '{output_csv}'")
 
     return 0
