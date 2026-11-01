@@ -1,0 +1,52 @@
+[project]
+name = "beeper-chat-organizer"
+version = "0.1.0"
+description = "Extract and analyze chat history from Beeper/Matrix databases"
+requires-python = ">=3.12"
+dependencies = [
+    "pandas>=2.2.0",
+    "sentence-transformers>=3.0.0",
+    "scikit-learn>=1.5.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.scripts]
+beeper-extract = "beeper_chat_organizer.__main__:main"
+beeper-analyze = "beeper_chat_organizer.analyze:main"
+beeper-diagnose = "beeper_chat_organizer.diagnose:main"
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {beeper_chat_organizer = "src/beeper_chat_organizer"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+exclude = ["**/.venv/**", "**/tests/**", "**/build/**"]
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v --cov=src/beeper_chat_organizer --cov-report=html --cov-report=term-missing --cov-report=xml:coverage.xml"
+
+[tool.coverage.run]
+source = ["src/beeper_chat_organizer"]
+omit = ["**/tests/**"]
+
+[tool.uv]
+package = true
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.15.15",
+]
