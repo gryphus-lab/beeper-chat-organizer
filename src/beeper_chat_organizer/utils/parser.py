@@ -76,7 +76,10 @@ def _clean_message(message: str) -> str:
     if message.startswith("{"):
         try:
             msg_json = json.loads(message)
-            message = msg_json.get("body", message)
+            body = msg_json.get("body", message)
+            if isinstance(body, (dict, list)):
+                return message
+            message = body
         except (json.JSONDecodeError, TypeError, RecursionError):
             pass
 

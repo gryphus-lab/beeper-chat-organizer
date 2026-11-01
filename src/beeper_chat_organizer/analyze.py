@@ -12,7 +12,6 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from .config import EMBEDDING_MODEL, MIN_MESSAGE_LENGTH, NUM_TOPICS, OUTPUT_DIR
 from .utils.output import (
     ensure_private_output_dir,
-    sanitize_csv_formula as _sanitize_csv_formula,
     sanitize_terminal_text,
     write_private_csv,
 )

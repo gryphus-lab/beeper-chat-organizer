@@ -19,7 +19,8 @@ def sanitize_csv_formula(value):
 def sanitize_terminal_text(value) -> str:
     """Replace terminal control characters in untrusted display text."""
     return "".join(
-        " " if unicodedata.category(char) == "Cc" else char for char in str(value)
+        "" if char == "\x1b" else " " if unicodedata.category(char) == "Cc" else char
+        for char in str(value)
     )
 
 
