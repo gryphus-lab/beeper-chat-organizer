@@ -77,7 +77,10 @@ def _clean_message(message: str) -> str:
         try:
             msg_json = json.loads(message)
             message = msg_json.get("body", message)
-        except (json.JSONDecodeError, TypeError):
+        except (json.JSONDecodeError, TypeError, RecursionError):
             pass
+
+    if not isinstance(message, str):
+        message = str(message)
 
     return message.strip()

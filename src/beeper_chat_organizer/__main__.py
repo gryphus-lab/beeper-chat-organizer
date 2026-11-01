@@ -8,6 +8,11 @@ import pandas as pd
 
 from .config import DATABASE_PATH, OUTPUT_DIR
 from .utils.db import get_all_messages, get_messages, get_threads
+from .utils.output import (
+    ensure_private_output_dir,
+    sanitize_terminal_text,
+    write_private_csv,
+)
 from .utils.parser import parse_messages
 
 
@@ -56,10 +61,10 @@ def _export_chat(
     if df.empty:
         return None
 
-    output_dir.mkdir(parents=True, exist_ok=True)
+    output_dir = ensure_private_output_dir(output_dir)
     clean_title = _sanitize_filename(chat_name)
     output_csv = output_dir / f"{clean_title}_archive.csv"
-    df.to_csv(output_csv, index=False, encoding="utf-8")
+    write_private_csv(df, output_csv)
     return output_csv
 
 
@@ -73,6 +78,7 @@ def run_export_all(db_path: Path, output_dir: Path) -> int:
         return 1
 
     print(f"Found {len(threads_df)} chat(s). Exporting all...\n")
+    output_dir = ensure_private_output_dir(output_dir)
 
     total_messages = 0
     exported_count = 0
@@ -80,25 +86,25 @@ def run_export_all(db_path: Path, output_dir: Path) -> int:
     for _, row in threads_df.iterrows():
         chat_id = row["chat_id"]
         chat_name = row["chat_name"]
+        safe_chat_name = sanitize_terminal_text(chat_name)
 
         messages_raw = get_messages(db_path, chat_id)
         if not messages_raw:
-            print(f"  [{chat_name}] - no messages, skipping")
+            print(f"  [{safe_chat_name}] - no messages, skipping")
             continue
 
         df = parse_messages(messages_raw)
         if df.empty:
-            print(f"  [{chat_name}] - no parseable messages, skipping")
+            print(f"  [{safe_chat_name}] - no parseable messages, skipping")
             continue
 
-        output_dir.mkdir(parents=True, exist_ok=True)
         clean_title = _sanitize_filename(chat_name)
         output_csv = output_dir / f"{clean_title}_archive.csv"
-        df.to_csv(output_csv, index=False, encoding="utf-8")
+        write_private_csv(df, output_csv)
 
         total_messages += len(df)
         exported_count += 1
-        print(f"  [{chat_name}] -> {len(df)} messages -> {output_csv.name}")
+        print(f"  [{safe_chat_name}] -> {len(df)} messages -> {output_csv.name}")
 
     # Also export a combined file with all messages
     print("\nExporting combined history...")
@@ -108,7 +114,7 @@ def run_export_all(db_path: Path, output_dir: Path) -> int:
         all_df = _parse_all_with_chat_names(all_messages, threads_df)
         if not all_df.empty:
             combined_path = output_dir / "complete_history.csv"
-            all_df.to_csv(combined_path, index=False, encoding="utf-8")
+            write_private_csv(all_df, combined_path)
             print(f"  Combined -> {len(all_df)} messages -> {combined_path.name}")
 
     print(f"\nDone! Exported {total_messages} messages from {exported_count} chats.")
@@ -163,7 +169,7 @@ def run_interactive(db_path: Path, output_dir: Path) -> int:
     # Display available chats
     print("\n--- Available Beeper Chats ---")
     for idx, row in threads_df.iterrows():
-        print(f"[{idx}] {row['chat_name']}")
+        print(f"[{idx}] {sanitize_terminal_text(row['chat_name'])}")
 
     # Get user selection
     try:
@@ -175,7 +181,7 @@ def run_interactive(db_path: Path, output_dir: Path) -> int:
         return 1
 
     # Extract messages
-    print(f"\nExtracting chat history for '{group_name}'...")
+    print(f"\nExtracting chat history for '{sanitize_terminal_text(group_name)}'...")
     output_path = _export_chat(db_path, target_thread_id, group_name, output_dir)
 
     if output_path is None:
@@ -185,8 +191,11 @@ def run_interactive(db_path: Path, output_dir: Path) -> int:
     # Show preview
     df = pd.read_csv(output_path)
     print("\n--- Extracted Data Sample Preview ---")
-    print(df.head(10))
-    print(f"\nSuccess! Exported {len(df)} total messages into: '{output_path}'")
+    print(df.head(10).map(sanitize_terminal_text))
+    print(
+        f"\nSuccess! Exported {len(df)} total messages into: "
+        f"'{sanitize_terminal_text(output_path)}'"
+    )
 
     return 0
 
