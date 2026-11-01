@@ -4,41 +4,39 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    types: [opened, synchronize, reopened]
 
 jobs:
-  test:
+  build:
+    name: Build and analyze
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Install mise
-        uses: jdx/mise-action@v2
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
+      # This step should build, test and generate coverage reports
+      - name: mise action
+        uses: jdx/mise-action@8008c3f4db491fde6fd6d72dc97fbdb752dac949 # v5.2.5
 
       - name: Install dependencies
-        run: mise run install
+        run: mise run bootstrap
 
       - name: Lint
         run: mise run lint
 
       - name: Run tests
         run: mise run test
-
-  sonar:
-    runs-on: ubuntu-latest
-    needs: test
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install mise
-        uses: jdx/mise-action@v2
-
-      - name: Install and test
-        run: |
-          mise run install
-          mise run test
-
+      - name: Cache SonarQube packages
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
       - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@v2
+        uses: SonarSource/sonarqube-scan-action@4d1dc0c91ee400dcf8a6dddf2f705ac36542e304 # v8.4.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.organization=gryphus-lab
+            -Dsonar.projectKey=gryphus-lab_beeper-chat-organizer
